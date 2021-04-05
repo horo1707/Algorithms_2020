@@ -58,33 +58,31 @@ namespace del
             else
             {
                 var vertexs = new List<GraphVertex>();
-                for (var i = 0; i < 7; i++)
+                for (var i = 0; i < 6; i++)
                 {
                     vertexs.Add(new GraphVertex(i));
                 }
                 var edges = new List<GraphEdge>();
                 edges.Add(new GraphEdge(vertexs[0], vertexs[1]));
-                edges.Add(new GraphEdge(vertexs[0], vertexs[6]));
-                edges.Add(new GraphEdge(vertexs[1], vertexs[6]));
+                edges.Add(new GraphEdge(vertexs[1], vertexs[2]));
+                edges.Add(new GraphEdge(vertexs[2], vertexs[3]));
+                edges.Add(new GraphEdge(vertexs[3], vertexs[0]));
                 edges.Add(new GraphEdge(vertexs[1], vertexs[3]));
-                edges.Add(new GraphEdge(vertexs[1], vertexs[5]));
-                edges.Add(new GraphEdge(vertexs[6], vertexs[3]));
-                edges.Add(new GraphEdge(vertexs[3], vertexs[5]));
-                edges.Add(new GraphEdge(vertexs[3], vertexs[2]));
                 edges.Add(new GraphEdge(vertexs[3], vertexs[4]));
-                edges.Add(new GraphEdge(vertexs[5], vertexs[2]));
-                edges.Add(new GraphEdge(vertexs[2], vertexs[4]));
+                edges.Add(new GraphEdge(vertexs[3], vertexs[5]));
+                edges.Add(new GraphEdge(vertexs[4], vertexs[5]));
 
                 graph = new Graph(vertexs, edges);
             }
 
             Console.WriteLine(
                 "Какую операцию вы хотите сделать с графом?\n" +
-                "1 - Посмотреть матрицу смежности\n" +
+                "1 - Посмотреть матрицу смежности\n" + 
                 "2 - Произвести обход в ширину\n" +
                 "3 - Волновой алгоритм\n" +
                 "4 - Алгоритм Дейкстры(Если вы выбрали использовать пример - то все ребра имеют вес = 1)\n" +
-                "5 - Поиск шарниров");
+                "5 - Поиск шарниров\n" +
+                "6 - Поиск Эйлерова цикла");
 
             var choise = int.Parse(Console.ReadLine());
             switch (choise)
@@ -110,6 +108,9 @@ namespace del
                     var hringe = GetHringeCount(graph);
                     Console.WriteLine("Количество шарниров равно " + hringe + "\n------------------");
                     break;
+                case 6:
+                    GetEulerianCycle(graph);
+                    break;
                 default:
                     break;
             }
@@ -117,8 +118,8 @@ namespace del
 
         static void AdjacencyMatrix(Graph graph)
         {
-
-
+            
+            
 
             var matrix = graph.GetAdjacencyMatrix();
             for (var i = 0; i < matrix.GetLength(0); i++)
@@ -184,7 +185,7 @@ namespace del
 
         static void WaveAlgorithm(Graph graph)
         {
-            Console.WriteLine("Укажите номера стартовой и конечной вершины через пробел");
+            Console.WriteLine("Укажите номера старотовой и конечной вершины через пробел");
             var vertexNumber = Console.ReadLine().Split();
             var start = int.Parse(vertexNumber[0]);
             var finish = int.Parse(vertexNumber[1]);
@@ -320,15 +321,101 @@ namespace del
 
             return result;
         }
+
+        static void GetEulerianCycle (Graph graph)
+        {
+            var dict = new Dictionary<int, int>();
+            foreach (var edge in graph.Edges)
+            {
+                if (!dict.ContainsKey(edge.Vertexs.Item1.Name))
+                    dict[edge.Vertexs.Item1.Name] = 1;
+                else
+                    dict[edge.Vertexs.Item1.Name]++;
+                if (!dict.ContainsKey(edge.Vertexs.Item2.Name))
+                    dict[edge.Vertexs.Item2.Name] = 1;
+                else
+                    dict[edge.Vertexs.Item2.Name]++;
+            }
+
+            var OddVertex = 0;
+            foreach (var count in dict.Values)
+            {
+                if (count % 2 == 1)
+                {
+                    OddVertex++;
+                }
+            }
+
+            if (OddVertex > 1 || BFS(graph).Count != graph.Vertexs.Count)
+            {
+                Console.WriteLine("Граф не содержит Эйлеров цикл");
+                Main();
+            }
+
+            Console.WriteLine("Введите номер вершины, с которой хотите начать эйлеров цикл");
+            var start = int.Parse(Console.ReadLine());
+
+            var result = new List<int>();
+            var visited = new List<GraphEdge>();
+            var stack = new Stack<int>();
+            stack.Push(start);
+
+            while (stack.Count > 0)
+            {
+                var current = stack.Peek();
+                var edgeExcist = false;
+
+                foreach (var edge in graph.Edges)
+                {
+                    var isNotVisited = !visited.Contains(edge);
+                    if (edge.Vertexs.Item1.Name == current && isNotVisited)
+                    {
+                        stack.Push(edge.Vertexs.Item2.Name);
+                        visited.Add(edge);
+                        edgeExcist = true;
+                        break;
+                    }
+                    else if (edge.Vertexs.Item2.Name == current && isNotVisited)
+                    {
+                        stack.Push(edge.Vertexs.Item1.Name);
+                        visited.Add(edge);
+                        edgeExcist = true;
+                        break;
+                    }
+                }
+
+                if (!edgeExcist)
+                {
+                    stack.Pop();
+                    result.Add(current);
+                }
+            }
+
+            if (visited.Count != graph.Edges.Count)
+            {
+                Console.WriteLine("Эйлеров цикл из данной вершины не найден");
+            }
+            else
+            {
+                Console.WriteLine("Эйлеров цикл начиная с первой вершины имеет следующий вид:");
+                foreach (var temp in result)
+                {
+                    Console.Write(temp + " ");
+                }
+            }
+
+            Console.WriteLine("\n----------------------");
+            Main();
+        }
     }
 
     public class GraphVertex
     {
 
-        public GraphVertex(int name)
-        {
+         public GraphVertex(int name)
+         {
             Name = name;
-        }
+         }
 
         public int Name { get; }
     }
